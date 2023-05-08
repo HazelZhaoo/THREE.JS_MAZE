@@ -1,97 +1,131 @@
 class Maze extends THREE.Object3D
 {
-    constructor(numrow, numcol, scene) {
-      super();
-      this.rows = numrow;
-      this.cols = numcol;
-      this.grid = new Array(numrow);
-     
-      for (let i = 0; i < numcol; i++) {
-        this.grid[i] = new Array(numcol);
-        for (let j = 0; j < numrow; j++) {
-          this.grid[i][j] = 0;
+  constructor(numrow, numcol) 
+  {
+        super();
+        this.rows = numrow;
+        this.cols = numcol;
+        this.grid = new Array(numrow);
+        const cellSize = 20;
+        for (let i = 0; i < numrow; i++) {
+          this.grid[i] = new Array(numcol);
+          for (let j = 0; j < numcol; j++) {
+            const cell = new Cell(i * cellSize, 0, j * cellSize, cellSize);
+            floor_3D.add(cell);
+            this.grid[i][j] = cell;
+          }
         }
       }
-    }
-  
-    DFS() {
-        const visited = new Set(); // create a new set to store the visited cells
+    
+
+
+      DFS(start_cell) {
+        const visited = new Set();
         const cell_stack = new Stack();
-        //const stack = [{row: 0, col: 0}]; // and a stack of object
-      
-        while (!cell_stack.empty())
-        {
+        cell_stack.push(start_cell);
+        const start_index = this.getIndex(start_cell);
+        console.log(start_index); //debug statement
+        visited.add(start_index);
+    
+        while (!cell_stack.empty()) {
           const current_cell = cell_stack.pop();
-          const position = current_cell.row * this.cols + current_cell.col;
-      
-          if (visited.has(position)) 
-          {
+          const current_index = this.getIndex(current_cell);
+          console.log(current_index); //debug statement
+          if (visited.has(current_index)) {
             continue;
           }
-      
-          visited.add(position);
-      
+    
+          visited.add(current_index);
+    
           const unvisited = this.getUnvisited(current_cell, visited);
-      
+    
           if (unvisited.length > 0) {
-            stack.push(current_cell);
+            cell_stack.push(current_cell);
           }
-      
+    
           const random = Math.floor(Math.random() * unvisited.length);
           const chosen_neigh = unvisited[random];
-      
-          if (current_cell.row === chosen_neigh.row)
-        {
-            if (current_cell.col < chosen_neigh.col) {
-              this.grid[current_cell.row][current_cell.col + 1] |= 1;
-            } else {
-              this.grid[current_cell.row][current_cell.col] |= 1;
-            }
-          } else {
-            if (current_cell.row < chosen_neigh.row) {
-              this.grid[current_cell.row + 1][current_cell.col] |= 2;
-            } else {
-              this.grid[current_cell.row][current_cell.col] |= 2;
-            }
+          const chosen_index = this.getIndex(chosen_neigh);
+    
+          // Determine direction of wall to remove based on indices
+          const y_diff = chosen_index[0] - current_index[0];
+          const x_diff = chosen_index[1] - current_index[1];
+          if (y_diff === 1) {
+            // remove wall to bottom
+            current_cell.removeWall("backPlane");
+            chosen_neigh.removeWall("frontPlane");
+          } else if (y_diff === -1) {
+            // remove wall to top
+            current_cell.removeWall("frontPlane");
+            chosen_neigh.removeWall("backPlane");
+          } else if (x_diff === 1) {
+            // remove wall to right
+            current_cell.removeWall("rightPlane");
+            chosen_neigh.removeWall("leftPlane");
+          } else if (x_diff === -1) {
+            // remove wall to left
+            current_cell.removeWall("leftPlane");
+            chosen_neigh.removeWall("rightPlane");
           }
+    
+          cell_stack.push(chosen_neigh);
+        }
+    }
       
-          stack.push(chosen_neigh);
+
+      
+ getIndex(cell) 
+  {
+    let index = [];
+    for (let i = 0; i < this.rows; i++) 
+    {
+      for (let j = 0; j < this.cols; j++) 
+      {
+        if (this.grid[i][j] === cell) {
+          index = [i, j];
         }
       }
-      
-      getUnvisited(cell, visited) {
-        const unvisited_ = [];
-      
-        if (cell.col > 0) {
-          const neigh = {row: cell.row, col: cell.col - 1};
-          if (!visited.has(neigh.row * this.cols + neigh.col)) {
-            unvisited_.push(neigh);
-          }
-        }
-      
-        if (cell.row > 0) {
-          const neigh = {row: cell.row - 1, col: cell.col};
-          if (!visited.has(neigh.row * this.cols + neigh.col)) {
-            unvisited_.push(neigh);
-          }
-        }
-      
-        if (cell.col < this.cols - 1) {
-          const neigh = {row: cell.row, col: cell.col + 1};
-          if (!visited.has(neigh.row * this.cols + neigh.col)) {
-            unvisited_.push(neigh);
-          }
-        }
-      
-        if (cell.row < this.rows - 1) {
-          const neigh = {row: cell.row + 1, col: cell.col};
-          if (!visited.has(neigh.row * this.cols + neigh.col)) {
-            unvisited_.push(neigh);
-          }
-        }
-      
-        return unvisited_;
+  }
+  return index;
+}
+
+    getUnvisited(cell, visited) 
+  {
+      const unvisited_ = [];
+      let index = this.getIndex(cell);
+      console.log(index); //debug statement
+      const row = index[0];
+      const col = index[1];
+      const neighbors = [];
+
+      if (row > 0) 
+      {
+        neighbors.push(this.grid[row - 1][col]);
       }
+      if (row < this.rows - 1) 
+      {
+        neighbors.push(this.grid[row + 1][col]);
+      }
+      if (col > 0) 
+      {
+        neighbors.push(this.grid[row][col - 1]);
+      }
+      if (col < this.cols - 1)
+      {
+        neighbors.push(this.grid[row][col + 1]);
+      }
+
+      for (let i = 0; i < neighbors.length; i++) 
+      {
+        if (!visited.has(neighbors[i])) {
+          unvisited_.push(neighbors[i]);
+        }
+      }
+  
+  return unvisited_;
+}
+
+
 
       toString() {
         let result = "";
@@ -102,4 +136,4 @@ class Maze extends THREE.Object3D
       }
     }
 
-export {Maze}
+ 
