@@ -5,6 +5,7 @@ class Cell extends THREE.Object3D {
     this.y = y;
     this.z = z;
     this.size = size;
+    this.vistied = false;
     
     const geometry = new THREE.PlaneGeometry(size, size);
     const material = new THREE.MeshBasicMaterial({ color: "#770737", side: THREE.DoubleSide, depthTest: true });
@@ -34,7 +35,7 @@ class Cell extends THREE.Object3D {
   }
  
   removeWall(direction) {
-    let wall , opp_wall;
+    let wall ;
      
     if (direction === "rightPlane") {
       wall = this.rightPlane;
